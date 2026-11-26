@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notion Countdown Widget</title>
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --card-bg: #f7f6f3;
+      --text-main: #37352f;
+      --text-sub: #787774;
+      --border-color: #e9e9e7;
+      --accent: #eb5757;
+    }
+
+    /* 自動偵測 Notion 深色模式 */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #191919;
+        --card-bg: #252525;
+        --text-main: #ffffffcf;
+        --text-sub: #9b9b9b;
+        --border-color: #373737;
+        --accent: #ff7369;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 12px;
+      user-select: none;
+    }
+
+    .widget-container {
+      width: 100%;
+      max-width: 480px;
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px 24px;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      letter-spacing: 0.02em;
+    }
+
+    .target-date {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-bottom: 16px;
+    }
+
+    .countdown-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .time-box {
+      background-color: var(--bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 6px;
+    }
+
+    .number {
+      font-size: 26px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
+    }
+
+    .number.highlight {
+      color: var(--accent);
+    }
+
+    .label {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .expired-msg {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--accent);
+      padding: 16px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="widget-container">
+    <div class="title" id="event-title">距離目標日還有</div>
+    <div class="target-date" id="target-date-display"></div>
+    <div class="countdown-grid" id="countdown-grid">
+      <div class="time-box">
+        <div class="number highlight" id="days">00</div>
+        <div class="label">天 Days</div>
+      </div>
+      <div class="time-box">
+        <div class="number" id="hours">00</div>
+        <div class="label">時 Hrs</div>
+      </div>
+      <div class="time-box">
+        <div class="number" id="minutes">00</div>
+        <div class="label">分 Mins</div>
+      </div>
+      <div class="time-box">
+        <div class="number" id="seconds">00</div>
+        <div class="label">秒 Secs</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 1. 預設值設定（若網址沒有帶參數時使用）
+    const DEFAULT_TITLE = "2027 跨年倒數";
+    const DEFAULT_DATE = "2027-01-01T00:00:00";
+
+    // 2. 讀取網址參數 (?title=xxx&date=YYYY-MM-DDTHH:MM:SS)
+    const params = new URLSearchParams(window.location.search);
+    const title = params.get("title") || DEFAULT_TITLE;
+    const dateParam = params.get("date") || DEFAULT_DATE;
+    const targetTime = new Date(dateParam).getTime();
+
+    document.getElementById("event-title").textContent = title;
+
+    if (isNaN(targetTime)) {
+      document.getElementById("countdown-grid").innerHTML =
+        '<div class="expired-msg" style="grid-column: span 4;">日期格式錯誤，請使用 YYYY-MM-DD</div>';
+    } else {
+      const formattedDate = new Date(targetTime).toLocaleDateString("zh-TW", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+      document.getElementById("target-date-display").textContent = formattedDate;
+
+      function updateCountdown() {
+        const now = new Date().getTime();
+        const diff = targetTime - now;
+
+        if (diff <= 0) {
+          document.getElementById("countdown-grid").innerHTML =
+            '<div class="expired-msg" style="grid-column: span 4;">🎉 時間到了！</div>';
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        document.getElementById("days").textContent = String(days).padStart(2, "0");
+        document.getElementById("hours").textContent = String(hours).padStart(2, "0");
+        document.getElementById("minutes").textContent = String(minutes).padStart(2, "0");
+        document.getElementById("seconds").textContent = String(seconds).padStart(2, "0");
+      }
+
+      updateCountdown();
+      setInterval(updateCountdown, 1000);
+    }
+  </script>
+</body>
+</html>
