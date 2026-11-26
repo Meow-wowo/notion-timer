@@ -3,185 +3,241 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Notion Countdown Widget</title>
+  <title>Cat Days Countdown</title>
   <style>
+    /* --- 馬卡龍紫配色設定 --- */
     :root {
-      --bg-color: #ffffff;
-      --card-bg: #f7f6f3;
-      --text-main: #37352f;
-      --text-sub: #787774;
-      --border-color: #e9e9e7;
-      --accent: #eb5757;
+      --main-bg: #F4F0F8;        /* 極淡紫藕灰白 */
+      --card-bg: #FFFFFF;        /* 純白卡片 */
+      --accent-color: #BFA8E8;   /* 主題色：馬卡龍紫 */
+      --text-primary: #5D406B;   /* 深紫色文字 */
+      --text-secondary: #9F8AB3; /* 淡紫色文字 */
+      --cat-ear-color: #DBC7ED;  /* 耳朵內側淺紫 */
+      font-family: 'Helvetica Neue', Arial, 'Microsoft JhengHei', sans-serif;
     }
 
-    /* 自動偵測 Notion 深色模式 */
+    /* 深色模式設定 (適應 Notion Dark Mode) */
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg-color: #191919;
-        --card-bg: #252525;
-        --text-main: #ffffffcf;
-        --text-sub: #9b9b9b;
-        --border-color: #373737;
-        --accent: #ff7369;
+        --main-bg: #2F2F35;
+        --card-bg: #3A3A42;
+        --accent-color: #CBB2F5;
+        --text-primary: #E8E0EE;
+        --text-secondary: #B8A9C9;
+        --cat-ear-color: #524263;
       }
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-main);
+      background-color: var(--main-bg);
+      color: var(--text-primary);
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      padding: 12px;
-      user-select: none;
+      padding: 20px;
+      transition: background-color 0.3s;
     }
 
-    .widget-container {
-      width: 100%;
-      max-width: 480px;
+    .main-wrapper {
+      position: relative;
+      padding-top: 50px; /* 為了讓貓耳朵露出來 */
+    }
+
+    /* --- 貓咪造型 --- */
+    .cat-ear {
+      position: absolute;
+      top: 0;
+      width: 0;
+      height: 0;
+      border-left: 30px solid transparent;
+      border-right: 30px solid transparent;
+      border-bottom: 50px solid var(--cat-ear-color);
+      z-index: 0;
+      transition: border-bottom-color 0.3s;
+    }
+    .ear-left { left: 40px; }
+    .ear-right { right: 40px; }
+
+    /* --- 卡片主體 --- */
+    .widget-card {
       background-color: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 20px 24px;
-      text-align: center;
-      transition: all 0.2s ease;
+      width: 300px;
+      border-radius: 30px;
+      padding: 40px 20px 30px 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+      position: relative;
+      z-index: 1; /* 在耳朵上面 */
+      transition: background-color 0.3s, box-shadow 0.3s;
+      border: 2px solid var(--accent-color);
     }
 
-    .title {
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 4px;
-      letter-spacing: 0.02em;
+    /* 裝飾用的小圓點 (貓掌風格) */
+    .dot-decoration {
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      display: flex;
+      gap: 6px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      background-color: var(--cat-ear-color);
+      border-radius: 50%;
+      opacity: 0.5;
     }
 
-    .target-date {
-      font-size: 12px;
-      color: var(--text-sub);
-      margin-bottom: 16px;
-    }
-
-    .countdown-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-    }
-
-    .time-box {
-      background-color: var(--bg-color);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 12px 6px;
-    }
-
-    .number {
-      font-size: 26px;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      line-height: 1.2;
-    }
-
-    .number.highlight {
-      color: var(--accent);
-    }
-
-    .label {
-      font-size: 11px;
-      color: var(--text-sub);
-      margin-top: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .expired-msg {
+    .event-title {
       font-size: 18px;
-      font-weight: 600;
-      color: var(--accent);
-      padding: 16px 0;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+      word-break: break-all;
     }
+
+    .target-date-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 25px;
+    }
+
+    /* --- 只顯示天數 --- */
+    .days-section {
+      margin-bottom: 15px;
+    }
+
+    .number-large {
+      font-size: 64px;
+      font-weight: 900;
+      color: var(--accent-color);
+      line-height: 1;
+      letter-spacing: -2px;
+      font-variant-numeric: tabular-nums; /* 數字等寬，跳動時不跑版 */
+    }
+
+    .label-small {
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 5px;
+    }
+
+    /* --- 底部裝飾 --- */
+    .footer-line {
+      height: 6px;
+      background-color: var(--accent-color);
+      width: 60px;
+      margin: 0 auto;
+      border-radius: 3px;
+      margin-top: 25px;
+      opacity: 0.7;
+    }
+
+    /* 過期樣式 */
+    .expired-msg {
+      font-size: 22px;
+      color: var(--accent-color);
+      font-weight: bold;
+      padding: 20px 0;
+    }
+
   </style>
 </head>
 <body>
-  <div class="widget-container">
-    <div class="title" id="event-title">距離目標日還有</div>
-    <div class="target-date" id="target-date-display"></div>
-    <div class="countdown-grid" id="countdown-grid">
-      <div class="time-box">
-        <div class="number highlight" id="days">00</div>
-        <div class="label">天 Days</div>
+
+  <div class="main-wrapper">
+    <!-- 貓耳朵 -->
+    <div class="cat-ear ear-left"></div>
+    <div class="cat-ear ear-right"></div>
+
+    <!-- 卡片內容 -->
+    <div class="widget-card">
+      <div class="dot-decoration">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
       </div>
-      <div class="time-box">
-        <div class="number" id="hours">00</div>
-        <div class="label">時 Hrs</div>
+
+      <div class="event-title" id="event-title">載入中...</div>
+      <div class="target-date-label" id="target-date-display"></div>
+
+      <div class="days-section" id="countdown-area">
+        <div class="number-large" id="days-count">0</div>
+        <div class="label-small">DAYS LEFT</div>
       </div>
-      <div class="time-box">
-        <div class="number" id="minutes">00</div>
-        <div class="label">分 Mins</div>
-      </div>
-      <div class="time-box">
-        <div class="number" id="seconds">00</div>
-        <div class="label">秒 Secs</div>
-      </div>
+      
+      <div class="footer-line"></div>
     </div>
   </div>
 
   <script>
-    // 1. 預設值設定（若網址沒有帶參數時使用）
-    const DEFAULT_TITLE = "2027 跨年倒數";
-    const DEFAULT_DATE = "2027-01-01T00:00:00";
+    // --- 設定區域 ---
+    // 請在此處設定預設值 (若網址沒有參數時顯示)
+    const DEFAULT_TITLE = "未設定活動";
+    const DEFAULT_DATE = "2025-12-31"; // 預設日期
 
-    // 2. 讀取網址參數 (?title=xxx&date=YYYY-MM-DDTHH:MM:SS)
+    // --- 程式邏輯 ---
     const params = new URLSearchParams(window.location.search);
     const title = params.get("title") || DEFAULT_TITLE;
-    const dateParam = params.get("date") || DEFAULT_DATE;
-    const targetTime = new Date(dateParam).getTime();
-
+    // 支援 YYYY.MM.DD 或標準 YYYY-MM-DD 格式
+    const dateParam = (params.get("date") || DEFAULT_DATE).replace(/\./g, '-');
+    
     document.getElementById("event-title").textContent = title;
 
-    if (isNaN(targetTime)) {
-      document.getElementById("countdown-grid").innerHTML =
-        '<div class="expired-msg" style="grid-column: span 4;">日期格式錯誤，請使用 YYYY-MM-DD</div>';
-    } else {
-      const formattedDate = new Date(targetTime).toLocaleDateString("zh-TW", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-      document.getElementById("target-date-display").textContent = formattedDate;
+    // 設定目標時間為當天的 00:00:00，確保只計算日期
+    const targetDate = new Date(dateParam);
+    targetDate.setHours(0, 0, 0, 0); 
 
-      function updateCountdown() {
-        const now = new Date().getTime();
-        const diff = targetTime - now;
+    const _second = 1000;
+    const _minute = _second * 60;
+    const _hour = _minute * 60;
+    const _day = _hour * 24;
+    let timer;
 
-        if (diff <= 0) {
-          document.getElementById("countdown-grid").innerHTML =
-            '<div class="expired-msg" style="grid-column: span 4;">🎉 時間到了！</div>';
-          return;
-        }
+    function showComplete() {
+      clearInterval(timer);
+      document.getElementById("countdown-area").innerHTML = 
+        '<div class="expired-msg">就是今天！</div>';
+      document.getElementById("target-date-display").style.display = 'none';
+    }
 
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    function updateCountdown() {
+      const now = new Date();
+      // 計算兩個日期的毫秒數差距
+      const distance = targetDate.getTime() - now.getTime();
 
-        document.getElementById("days").textContent = String(days).padStart(2, "0");
-        document.getElementById("hours").textContent = String(hours).padStart(2, "0");
-        document.getElementById("minutes").textContent = String(minutes).padStart(2, "0");
-        document.getElementById("seconds").textContent = String(seconds).padStart(2, "0");
+      // 如果距離小於 0，表示時間已過或就是今天
+      // 因為我們設定目標時間是 00:00，所以只要現在超過 00:00 就顯示就是今天
+      if (distance < 0) {
+        showComplete();
+        return;
       }
 
-      updateCountdown();
-      setInterval(updateCountdown, 1000);
+      // 計算天數 (無條件捨去)
+      const days = Math.floor(distance / _day);
+
+      // 更新畫面
+      document.getElementById("days-count").textContent = days;
+      
+      // 顯示目標日期文字
+      document.getElementById("target-date-display").textContent = 
+        targetDate.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' });
     }
+
+    // 初始化
+    if (isNaN(targetDate.getTime())) {
+       document.getElementById("event-title").textContent = "日期格式錯誤";
+       document.getElementById("countdown-area").innerHTML = '<div class="label-small" style="color:red">Use YYYY-MM-DD</div>';
+    } else {
+       updateCountdown();
+       // 每分鐘更新一次即可 (因為只顯示天，不需要每秒更新)
+       timer = setInterval(updateCountdown, 60000); 
+    }
+
   </script>
 </body>
 </html>
